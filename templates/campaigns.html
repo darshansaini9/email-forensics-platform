@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Campaign Correlation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div class="title">Campaign Correlation
+        <span>Emails clustered by shared sending infrastructure (IP / domain overlap)</span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <a class="btn btn-secondary" href="{{ url_for('list_cases') }}">Case history</a>
+        <a class="btn btn-secondary" href="{{ url_for('index') }}">&larr; Analyze another</a>
+      </div>
+    </header>
+
+    {% if campaigns %}
+      {% for camp in campaigns %}
+      <div class="panel full" style="margin-bottom:16px;">
+        <h3>
+          Campaign CAMP-{{ camp.cluster_id }}
+          <span class="pill {{ 'pill-fail' if camp.attribution_confidence == 'High' else ('pill-warn' if camp.attribution_confidence == 'Medium' else 'pill-neutral') }}" style="float:right;">
+            {{ camp.attribution_confidence }} confidence
+          </span>
+        </h3>
+        <div class="kv"><div class="k">Related emails</div><div class="v">{{ camp.case_ids | length }}</div></div>
+        <div class="kv"><div class="k">Case IDs</div><div class="v">{% for cid in camp.case_ids %}<a href="{{ url_for('view_case', case_id=cid) }}">#{{ cid }}</a>{{ ", " if not loop.last }}{% endfor %}</div></div>
+        <div class="kv"><div class="k">Highest score</div><div class="v">{{ camp.max_risk_score }}/100</div></div>
+        <div class="ioc-group" style="margin-top:14px;">
+          <div class="ioc-label">Shared IPs ({{ camp.shared_ips | length }})</div>
+          {% for ip in camp.shared_ips %}<span class="ioc-chip">{{ ip }}</span>{% else %}<span class="empty-note">none</span>{% endfor %}
+        </div>
+        <div class="ioc-group">
+          <div class="ioc-label">Shared domains ({{ camp.shared_domains | length }})</div>
+          {% for d in camp.shared_domains %}<span class="ioc-chip">{{ d }}</span>{% else %}<span class="empty-note">none</span>{% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="panel full">
+        <p class="empty-note">No campaigns detected yet — this appears once 2+ analyzed emails share an IP or sending domain. Analyze more emails to build correlation.</p>
+      </div>
+    {% endif %}
+
+    <footer class="note">
+      Clustering is computed via union-find over shared IP/domain indicators across all
+      stored cases — a lightweight stand-in for graph-database correlation, same output
+      shape (clusters + confidence), no extra infrastructure required for the prototype.
+    </footer>
+  </div>
+</body>
+</html>

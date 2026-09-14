@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Forensic Report — {{ report.message.subject or "(no subject)" }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% set verdict = report.risk_assessment.verdict %}
+{% set vclass = 'v-legit' if verdict == 'Legitimate' else ('v-suspicious' if verdict == 'Suspicious' else ('v-phishing' if verdict == 'Likely Phishing' else 'v-fraud')) %}
+  <div class="wrap">
+    <header class="masthead">
+      <div class="title">Forensic Report
+        <span>Source: {{ source_filename }} · generated {{ report.generated_at }}{% if report.case_id %} · Case #{{ report.case_id }}{% endif %}</span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <a class="btn btn-secondary" href="{{ url_for('list_cases') }}">Case history</a>
+        <a class="btn btn-secondary" href="{{ url_for('index') }}">&larr; Analyze another</a>
+      </div>
+    </header>
+
+    <div class="verdict-band {{ vclass }}">
+      <div class="score-dial">{{ report.risk_assessment.score }}</div>
+      <div>
+        <div class="verdict-label">{{ verdict }}</div>
+        <div class="verdict-sub">Fraud confidence score out of 100, fused from authentication, origin, content and structural signals</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <h3>Message</h3>
+        <div class="kv"><div class="k">Subject</div><div class="v">{{ report.message.subject or "—" }}</div></div>
+        <div class="kv"><div class="k">From</div><div class="v">{{ report.message.from_display_name }} &lt;{{ report.message.from_address }}&gt;</div></div>
+        <div class="kv"><div class="k">From domain</div><div class="v">{{ report.message.from_domain or "—" }}</div></div>
+        <div class="kv"><div class="k">Reply-To</div><div class="v">{{ report.message.reply_to or "—" }}</div></div>
+        <div class="kv"><div class="k">Return-Path</div><div class="v">{{ report.message.return_path or "—" }}</div></div>
+        <div class="kv"><div class="k">Message-ID</div><div class="v">{{ report.message.message_id or "—" }}</div></div>
+        <div class="kv"><div class="k">Date</div><div class="v">{{ report.message.date or "—" }}</div></div>
+        {% if report.evidence %}
+        <div class="kv"><div class="k">Evidence SHA-256</div><div class="v" style="font-size:11px;">{{ report.evidence.sha256 }}</div></div>
+        {% endif %}
+        {% if report.message.attachments %}
+        <div class="kv"><div class="k">Attachments</div><div class="v">{{ report.message.attachments | join(", ") }}</div></div>
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <h3>Authentication</h3>
+        {% set spf = report.authentication.spf %}
+        {% set dkim = report.authentication.dkim %}
+        {% set dmarc = report.authentication.dmarc %}
+        <div class="kv">
+          <div class="k">SPF</div>
+          <div class="v"><span class="pill {{ 'pill-pass' if spf == 'pass' else ('pill-neutral' if spf == 'none' else 'pill-fail') }}">{{ spf }}</span></div>
+        </div>
+        <div class="kv">
+          <div class="k">DKIM</div>
+          <div class="v"><span class="pill {{ 'pill-pass' if dkim == 'pass' else ('pill-neutral' if dkim == 'none' else 'pill-fail') }}">{{ dkim }}</span></div>
+        </div>
+        <div class="kv">
+          <div class="k">DMARC</div>
+          <div class="v"><span class="pill {{ 'pill-pass' if dmarc == 'pass' else ('pill-neutral' if dmarc == 'none' else 'pill-fail') }}">{{ dmarc }}</span></div>
+        </div>
+        <div class="kv">
+          <div class="k">Alignment</div>
+          <div class="v">
+            {% if report.authentication.alignment_ok is sameas true %}
+              <span class="pill pill-pass">aligned</span>
+            {% elif report.authentication.alignment_ok is sameas false %}
+              <span class="pill pill-fail">mismatch</span>
+            {% else %}
+              <span class="pill pill-neutral">inconclusive</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Probable source infrastructure</h3>
+        {% if report.origin and report.origin.status == 'ok' %}
+          <div class="kv"><div class="k">Origin IP</div><div class="v">{{ report.origin.ip }}</div></div>
+          <div class="kv"><div class="k">GeoIP estimate</div><div class="v">{{ report.origin.city }}, {{ report.origin.region }}, {{ report.origin.country }}</div></div>
+          <div class="kv"><div class="k">ISP / Org</div><div class="v">{{ report.origin.isp }}{% if report.origin.org and report.origin.org != report.origin.isp %} / {{ report.origin.org }}{% endif %}</div></div>
+          <div class="kv"><div class="k">ASN</div><div class="v">{{ report.origin.asn or "—" }}</div></div>
+          <div class="kv"><div class="k">Proxy</div>
+            <div class="v">
+              {% if report.origin.proxy %}<span class="pill pill-fail">detected</span>
+              {% else %}<span class="pill pill-pass">not detected</span>{% endif %}
+            </div>
+          </div>
+          <div class="kv"><div class="k">Hosting/cloud</div>
+            <div class="v">
+              {% if report.origin.hosting %}<span class="pill pill-warn">yes</span>
+              {% else %}<span class="pill pill-pass">no</span>{% endif %}
+            </div>
+          </div>
+          <div class="kv"><div class="k">Trusted provider</div>
+            <div class="v">
+              {% if report.origin.trusted_provider %}<span class="pill pill-pass">yes — recognized mail provider</span>
+              {% else %}<span class="pill pill-neutral">not recognized</span>{% endif %}
+            </div>
+          </div>
+          {% if report.origin.note %}<p class="empty-note" style="margin-top:6px;">{{ report.origin.note }}</p>{% endif %}
+          <p class="empty-note" style="margin-top:10px;">{{ report.origin.disclaimer }}</p>
+        {% else %}
+          <p class="empty-note">{{ report.origin.note if report.origin else "No origin data available." }}</p>
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <h3>Content analysis — heuristic <span style="float:right;font-family:var(--mono);font-size:12px;color:var(--text-dim);">{{ report.content_analysis.score }}/100</span></h3>
+        {% if report.content_analysis.findings %}
+          {% for f in report.content_analysis.findings %}
+          <div class="finding">
+            <span class="fweight">+{{ f.weight }}</span>
+            <div class="fcat">{{ f.category }}</div>
+            <div class="fdetail">{{ f.detail }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-note">No content-based indicators detected.</p>
+        {% endif %}
+      </div>
+
+      <div class="panel full">
+        <h3>Relay / hop chain ({{ report.hops | length }} hop{{ 's' if report.hops | length != 1 else '' }})</h3>
+        {% if report.hops %}
+        <ul class="hop-list">
+          {% for h in report.hops %}
+          <li class="{{ 'origin' if h.is_earliest_external else '' }}">
+            Hop {{ h.index }}{% if h.from_host %} — from {{ h.from_host }}{% endif %}{% if h.by_host %} — by {{ h.by_host }}{% endif %}
+            {% if h.from_ip %}<span class="hop-ip"> [{{ h.from_ip }}]</span>{% endif %}
+            {% if h.is_earliest_external %}<span class="hop-tag">earliest external hop</span>{% endif %}
+            {% if h.is_private_ip %}<span class="hop-tag" style="color:var(--text-dim);border-color:var(--border);">private IP</span>{% endif %}
+            <div class="hop-raw">{{ h.raw }}</div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+          <p class="empty-note">No Received headers found in this message.</p>
+        {% endif %}
+      </div>
+
+      <div class="panel full">
+        <h3>Risk factors ({{ report.risk_assessment.factors | length }})</h3>
+        {% if report.risk_assessment.factors %}
+          {% for f in report.risk_assessment.factors %}
+          <div class="finding">
+            <span class="fweight">+{{ f.weight }}</span>
+            <div class="fcat">{{ f.category }}</div>
+            <div class="fdetail">{{ f.detail }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-note">No risk factors detected — message appears clean based on available signals.</p>
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <h3>Domain intelligence</h3>
+        {% if report.domain_intel and report.domain_intel.status == 'ok' %}
+          <div class="kv"><div class="k">Domain</div><div class="v">{{ report.domain_intel.domain }}</div></div>
+          <div class="kv"><div class="k">Registered</div><div class="v">{{ report.domain_intel.created_date }} ({{ report.domain_intel.age_days }} days ago)</div></div>
+          <div class="kv"><div class="k">Registrar</div><div class="v">{{ report.domain_intel.registrar or "—" }}</div></div>
+          <div class="kv"><div class="k">Flag</div>
+            <div class="v">
+              {% if report.domain_intel.is_newly_registered %}
+                <span class="pill pill-warn">newly registered</span>
+              {% else %}
+                <span class="pill pill-pass">no flag</span>
+              {% endif %}
+            </div>
+          </div>
+        {% else %}
+          <p class="empty-note">{{ report.domain_intel.note if report.domain_intel else "WHOIS lookup not available in this environment." }}</p>
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <h3>ML/NLP classifier</h3>
+        {% if report.ml_classification and report.ml_classification.available %}
+          <div class="kv"><div class="k">Label</div><div class="v">{{ report.ml_classification.label }}</div></div>
+          <div class="kv"><div class="k">Confidence</div><div class="v">{{ "%.0f"|format(report.ml_classification.confidence * 100) }}%</div></div>
+          {% if report.ml_classification.backend %}<div class="kv"><div class="k">Model</div><div class="v">{{ "Local sklearn (offline)" if report.ml_classification.backend == "sklearn-local" else "Transformer" }}</div></div>{% endif %}
+          <p class="empty-note" style="margin-top:10px;">{{ report.ml_classification.note }}</p>
+        {% else %}
+          <p class="empty-note">{{ report.ml_classification.note if report.ml_classification else "ML classifier not available." }} The fraud score above is currently based on heuristic and header/origin signals only.</p>
+        {% endif %}
+      </div>
+
+      {% if report.related_cases %}
+      <div class="panel full">
+        <h3>Campaign correlation — {{ report.related_cases | length }} related case(s)</h3>
+        {% for rc in report.related_cases %}
+        <div class="finding">
+          <span class="fweight">{{ rc.verdict }} · {{ rc.risk_score }}/100</span>
+          <div class="fcat">Case #{{ rc.case_id }} — {{ rc.subject or rc.filename }}</div>
+          <div class="fdetail">
+            Shared: {% for s in rc.shared_iocs %}<span class="ioc-chip">{{ s.type }}: {{ s.value }}</span>{% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="panel full">
+        <h3>Extracted indicators (IOCs)</h3>
+        <div class="ioc-group">
+          <div class="ioc-label">IP addresses ({{ report.iocs.ips | length }})</div>
+          {% for ip in report.iocs.ips %}<span class="ioc-chip">{{ ip }}</span>{% else %}<span class="empty-note">none</span>{% endfor %}
+        </div>
+        <div class="ioc-group">
+          <div class="ioc-label">Domains ({{ report.iocs.domains | length }})</div>
+          {% for d in report.iocs.domains %}<span class="ioc-chip">{{ d }}</span>{% else %}<span class="empty-note">none</span>{% endfor %}
+        </div>
+        <div class="ioc-group">
+          <div class="ioc-label">URLs ({{ report.iocs.urls | length }})</div>
+          {% for u in report.iocs.urls %}<span class="ioc-chip">{{ u }}</span>{% else %}<span class="empty-note">none</span>{% endfor %}
+        </div>
+        <div class="ioc-group">
+          <div class="ioc-label">Email addresses ({{ report.iocs.emails | length }})</div>
+          {% for e in report.iocs.emails %}<span class="ioc-chip">{{ e }}</span>{% else %}<span class="empty-note">none</span>{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="report-actions">
+      <a class="btn" href="{{ url_for('download_report') }}">Download forensic report (JSON)</a>
+      <a class="btn btn-secondary" href="{{ url_for('index') }}">Analyze another email</a>
+    </div>
+
+    <footer class="note">
+      This score is a heuristic prototype output for demonstration purposes — not a
+      substitute for analyst review or legal/evidentiary certification.
+    </footer>
+  </div>
+</body>
+</html>

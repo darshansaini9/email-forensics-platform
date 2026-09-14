@@ -1,0 +1,23 @@
+Flask>=3.0
+requests>=2.31
+
+# Domain registration intelligence (core/domain_intel.py) - lightweight, on by default
+python-whois>=0.9
+
+# ML/NLP phishing classifier (core/ml_classifier.py) - on by default.
+# Trains a small local model from bundled examples on first run (<1 second,
+# cached to models/phishing_classifier.joblib afterward) and runs fully
+# offline from then on - no model download, no network dependency at demo time.
+scikit-learn>=1.4
+joblib>=1.3
+
+# Optional upgrade: swap in a Hugging Face transformer instead of the local
+# sklearn model by setting USE_TRANSFORMER_BACKEND = True in
+# core/ml_classifier.py. More powerful, but downloads ~500MB-2GB of model
+# weights on first run - not recommended right before a demo.
+# transformers>=4.40
+# torch>=2.2
+
+# Optional, for live DNS-based SPF/DMARC re-verification (see core/auth_checker.py:verify_live)
+# checkdmarc>=5.0
+# dnspython>=2.4

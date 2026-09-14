@@ -1,0 +1,31 @@
+Delivered-To: taksh@poornima-edu.example.com
+Received: by 2002:a17:906:9988:b0:9a1:1122:3344 with SMTP id y20csp7654321wrx;
+        Tue, 9 Sep 2026 06:02:11 -0700 (PDT)
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.poornima-edu.example.com with SMTPS id c9-20020a170906;
+        Tue, 09 Sep 2026 06:02:10 -0700 (PDT)
+Received-SPF: pass (google.com: domain of registrar@poornima-edu.example.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+Authentication-Results: mx.poornima-edu.example.com;
+       spf=pass (google.com: domain of registrar@poornima-edu.example.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=registrar@poornima-edu.example.com;
+       dkim=pass header.i=@poornima-edu.example.com header.s=google header.b=xY9zAb;
+       dmarc=pass (p=NONE sp=NONE dis=none) header.from=poornima-edu.example.com
+Message-ID: <CADkq7f9pT2xQ1rL0m@mail.gmail.com>
+Date: Tue, 09 Sep 2026 06:02:05 -0700
+From: "Office of the Registrar" <registrar@poornima-edu.example.com>
+Reply-To: registrar@poornima-edu.example.com
+To: taksh@poornima-edu.example.com
+Subject: Semester exam schedule published
+Content-Type: text/plain; charset="UTF-8"
+
+Hi Taksh,
+
+The semester examination schedule has been published on the student
+portal. Please log in to the portal directly (do not use any linked
+login page) to view your slot and download your admit card.
+
+If you have a clash between two papers, contact the examination cell
+by Friday.
+
+Regards,
+Office of the Registrar
+Poornima College of Engineering

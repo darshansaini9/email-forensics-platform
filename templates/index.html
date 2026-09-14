@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Email Forensic Intelligence Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div class="title">Email Forensic Intelligence Platform
+        <span>Header forensics · origin tracing · fraud scoring — SIH26106 prototype</span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <a class="btn btn-secondary" href="{{ url_for('list_cases') }}">Case history</a>
+        <a class="btn btn-secondary" href="{{ url_for('campaigns_view') }}">Campaigns</a>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for m in messages %}
+          <div class="flash">{{ m }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <p class="intro-copy">
+      Upload a raw <code>.eml</code> file. The platform parses the header chain, checks
+      SPF/DKIM/DMARC, geolocates the earliest external sending hop, scans the content for
+      social-engineering and BEC patterns, extracts IOCs, and fuses all of it into a single
+      fraud confidence score with a downloadable forensic report.
+    </p>
+
+    <div class="upload-panel">
+      <h2>Analyze an email</h2>
+      <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data">
+        <div class="dropzone">
+          Select a <strong>.eml</strong> file exported from Gmail / Outlook / Thunderbird
+          <br>
+          <input type="file" name="eml_file" accept=".eml" required>
+        </div>
+        <button type="submit">Run forensic analysis</button>
+      </form>
+
+      <div class="samples">
+        <h3>Or try a bundled sample</h3>
+        <div class="sample-links">
+          <a href="{{ url_for('analyze_sample', sample_name='phishing_sample') }}">Sample: suspected BEC/phishing</a>
+          <a href="{{ url_for('analyze_sample', sample_name='legit_sample') }}">Sample: legitimate email</a>
+        </div>
+      </div>
+    </div>
+
+    <footer class="note">
+      Prototype scope: works entirely on header/content analysis already present in the
+      .eml file, plus a live GeoIP lookup on the earliest external hop. No email content
+      is stored beyond the current session.
+    </footer>
+  </div>
+</body>
+</html>

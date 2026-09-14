@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Case History</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div class="title">Case History
+        <span>{{ cases | length }} analyzed email(s) in this instance</span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <a class="btn btn-secondary" href="{{ url_for('campaigns_view') }}">Campaign view</a>
+        <a class="btn btn-secondary" href="{{ url_for('index') }}">&larr; Analyze another</a>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+    {% endwith %}
+
+    <div class="panel full">
+      {% if cases %}
+      <table style="width:100%; border-collapse: collapse; font-size: 13.5px;">
+        <thead>
+          <tr style="text-align:left; color:var(--text-dim); border-bottom:1px solid var(--border);">
+            <th style="padding:8px 6px;">#</th>
+            <th style="padding:8px 6px;">Analyzed</th>
+            <th style="padding:8px 6px;">Subject</th>
+            <th style="padding:8px 6px;">From domain</th>
+            <th style="padding:8px 6px;">Origin</th>
+            <th style="padding:8px 6px;">Score</th>
+            <th style="padding:8px 6px;">Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in cases %}
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+            <td style="padding:8px 6px;"><a href="{{ url_for('view_case', case_id=c.id) }}">{{ c.id }}</a></td>
+            <td style="padding:8px 6px; font-family:var(--mono); font-size:12px; color:var(--text-dim);">{{ c.analyzed_at[:19] }}</td>
+            <td style="padding:8px 6px;"><a href="{{ url_for('view_case', case_id=c.id) }}">{{ c.subject or "(no subject)" }}</a></td>
+            <td style="padding:8px 6px; font-family:var(--mono);">{{ c.from_domain or "—" }}</td>
+            <td style="padding:8px 6px;">{{ c.origin_country or "—" }}</td>
+            <td style="padding:8px 6px; font-family:var(--mono);">{{ c.risk_score }}</td>
+            <td style="padding:8px 6px;">
+              <span class="pill {{ 'pill-pass' if c.verdict == 'Legitimate' else ('pill-warn' if c.verdict in ('Suspicious','Likely Phishing') else 'pill-fail') }}">{{ c.verdict }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <p class="empty-note">No cases analyzed yet. Analyze an email to start building case history.</p>
+      {% endif %}
+    </div>
+
+    <footer class="note">
+      Case history is stored locally in <code>cases.db</code> (SQLite) and is used to power
+      cross-email campaign correlation. Delete the file to reset.
+    </footer>
+  </div>
+</body>
+</html>
