@@ -11,8 +11,8 @@
 <body>
   <div class="wrap">
     <header class="masthead">
-      <div class="title">Email Forensic Intelligence Platform
-        <span>Header forensics · origin tracing · fraud scoring — SIH26106 prototype</span>
+      <div class="title">Email Forensic Tool
+        <span></span>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
         <a class="btn btn-secondary" href="{{ url_for('list_cases') }}">Case history</a>
@@ -29,7 +29,7 @@
     {% endwith %}
 
     <p class="intro-copy" style=" text-align: center; margin: 30px auto;">
-   Upload a raw .eml file. The platform analyzes the email headers, verifies SPF/DKIM/DMARC, finds the sender’s location, detects phishing/BEC patterns, extracts IOCs, and generates a *fraud confidence score and forensic report*
+   Upload a raw .eml file. The platform analyzes the email headers, verifies SPF/DKIM/DMARC, finds the sender’s location, detects phishing/BEC patterns, extracts IOCs, and generates a fraud confidence score and forensic report
     </p>
 
     <div class="upload-panel">
