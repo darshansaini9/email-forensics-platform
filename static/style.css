@@ -380,3 +380,8 @@ footer.note {
   border-top: 1px solid var(--border);
   padding-top: 16px;
 }
+.abc{
+  align-items: center;
+  cursor: pointer;
+  justify-content: center;
+}
