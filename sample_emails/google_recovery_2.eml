@@ -1,0 +1,26 @@
+Delivered-To: someone.else@gmail.com
+Received: from mail-sor-f73.google.com (mail-sor-f73.google.com. [209.85.220.73])
+        by mx.google.com with SMTPS id 00721157ae682-881f62c2099sor16189998b3.2.2026.09.10.05.20.02
+        for <someone.else@gmail.com>
+        (Google Transport Security);
+        Thu, 10 Sep 2026 05:20:02 -0700 (PDT)
+Received: by 2002:a89:88:0:b0:32e:83b6:98bb with SMTP id e9csp1067907lqh;
+        Thu, 10 Sep 2026 05:20:02 -0700 (PDT)
+Received-SPF: pass (google.com: domain of no-reply@accounts.google.com designates 209.85.220.73 as permitted sender) client-ip=209.85.220.73;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of no-reply@accounts.google.com designates 209.85.220.73 as permitted sender) smtp.mailfrom=no-reply@accounts.google.com;
+       dkim=pass header.i=@accounts.google.com header.s=20230601 header.b=abcXYZ;
+       dmarc=pass (p=REJECT sp=REJECT dis=none) header.from=accounts.google.com
+Message-ID: <ZZZuvRlwCKLIjFqiF4YKuw@notifications.google.com>
+Date: Thu, 10 Sep 2026 12:20:01 +0000
+From: "Google" <no-reply@accounts.google.com>
+To: someone.else@gmail.com
+Subject: Your Google Account was recovered successfully
+Content-Type: text/plain; charset="UTF-8"
+
+Hi,
+
+Your Google Account (someone.else@gmail.com) was recovered successfully.
+If this wasn't you, secure your account now.
+
+The Google Accounts team

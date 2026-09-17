@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Email Forensic Prototype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div class="title">Email Forensic Platform
+        <span>Head</span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <a class="btn btn-secondary" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="btn btn-secondary" href="{{ url_for('threat_map') }}">Threat map</a>
+        <a class="btn btn-secondary" href="{{ url_for('list_cases') }}">Case history</a>
+        <a class="btn btn-secondary" href="{{ url_for('campaigns_view') }}">Campaigns</a>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for m in messages %}
+          <div class="flash">{{ m }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <p class="intro-copy" style=" text-align: center; margin: 30px auto;">
+   Upload a raw .eml file. The platform analyzes the email headers, verifies SPF/DKIM/DMARC, finds the sender’s location, detects phishing/BEC patterns, extracts IOCs, and generates a fraud confidence score and forensic report
+    </p>
+
+    <div class="upload-panel">
+      <h2>Analyze an email</h2>
+      <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data">
+        <div class="dropzone">
+          Select a <strong>.eml</strong> file exported from Gmail / Outlook / Thunderbird
+          <br>
+          <input type="file" name="eml_file" accept=".eml" required>
+        </div>
+        <button classname="abc" type="submit" style="    display: block;
+    margin: 20px auto;
+    background-color: #64e6c1;
+    color: #123;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;" >Run forensic analysis</button>
+      </form>
+
+
+
+    <footer class="note">
+   
+    </footer>
+  </div>
+</body>
+</html>

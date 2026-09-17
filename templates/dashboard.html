@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard — Email Forensic Intelligence Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div class="title">Dashboard
+        <span>Aggregate view across every analyzed case in this instance</span>
+      </div>
+      <div class="nav-links">
+        <a class="btn btn-secondary" href="{{ url_for('threat_map') }}">Threat map</a>
+        <a class="btn btn-secondary" href="{{ url_for('list_cases') }}">Case history</a>
+        <a class="btn btn-secondary" href="{{ url_for('campaigns_view') }}">Campaigns</a>
+        <a class="btn btn-secondary" href="{{ url_for('index') }}">&larr; Analyze another</a>
+      </div>
+    </header>
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-label">Total emails scanned</div>
+        <div class="stat-number">{{ stats.total_scans }}</div>
+      </div>
+      <div class="stat-card accent-danger">
+        <div class="stat-label">Phishing / fraud flagged</div>
+        <div class="stat-number">{{ stats.phishing_detected }}</div>
+      </div>
+      <div class="stat-card accent-warn">
+        <div class="stat-label">High-risk fraud (critical)</div>
+        <div class="stat-number">{{ stats.critical_threats }}</div>
+      </div>
+      <div class="stat-card accent-ok">
+        <div class="stat-label">Average risk score</div>
+        <div class="stat-number">{{ stats.avg_risk_score }}</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <h3>Verdict breakdown</h3>
+        {% set vb = stats.verdict_breakdown %}
+        {% set total = stats.total_scans if stats.total_scans else 1 %}
+        {% set verdict_order = [
+          ('Legitimate', 'var(--risk-low)'),
+          ('Suspicious', 'var(--risk-mid)'),
+          ('Likely Phishing', 'var(--risk-high)'),
+          ('High-Risk Fraud', 'var(--risk-critical)')
+        ] %}
+        {% if stats.total_scans %}
+          {% for label, color in verdict_order %}
+          {% set count = vb.get(label, 0) %}
+          <div class="verdict-bar-row">
+            <div class="vb-label">{{ label }}</div>
+            <div class="vb-track"><div class="vb-fill" style="width:{{ (count/total*100)|round(1) }}%;background:{{ color }};"></div></div>
+            <div class="vb-count">{{ count }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-note">No cases analyzed yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <h3>Top sending domains</h3>
+        {% if stats.top_domains %}
+          {% for d in stats.top_domains %}
+          <div class="kv"><div class="k">{{ d.domain }}</div><div class="v">{{ d.count }} email{{ 's' if d.count != 1 }}</div></div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-note">No sending domains recorded yet.</p>
+        {% endif %}
+        <p class="empty-note" style="margin-top:14px;">
+          Want to see where these are sent from? Check the
+          <a href="{{ url_for('threat_map') }}">Threat Map</a> for origin geolocation and routing hops.
+        </p>
+      </div>
+
+      <div class="panel full">
+        <h3>Recent scans</h3>
+        {% if cases %}
+        <table style="width:100%; border-collapse: collapse; font-size: 13.5px;">
+          <thead>
+            <tr style="text-align:left; color:var(--text-dim); border-bottom:1px solid var(--border);">
+              <th style="padding:8px 6px;">#</th>
+              <th style="padding:8px 6px;">Analyzed</th>
+              <th style="padding:8px 6px;">Subject</th>
+              <th style="padding:8px 6px;">From domain</th>
+              <th style="padding:8px 6px;">Origin</th>
+              <th style="padding:8px 6px;">Score</th>
+              <th style="padding:8px 6px;">Verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in cases %}
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+              <td style="padding:8px 6px;"><a href="{{ url_for('view_case', case_id=c.id) }}">{{ c.id }}</a></td>
+              <td style="padding:8px 6px; font-family:var(--mono); font-size:12px; color:var(--text-dim);">{{ c.analyzed_at[:19] }}</td>
+              <td style="padding:8px 6px;"><a href="{{ url_for('view_case', case_id=c.id) }}">{{ c.subject or "(no subject)" }}</a></td>
+              <td style="padding:8px 6px; font-family:var(--mono);">{{ c.from_domain or "—" }}</td>
+              <td style="padding:8px 6px;">{{ c.origin_country or "—" }}</td>
+              <td style="padding:8px 6px; font-family:var(--mono);">{{ c.risk_score }}</td>
+              <td style="padding:8px 6px;">
+                <span class="pill {{ 'pill-pass' if c.verdict == 'Legitimate' else ('pill-warn' if c.verdict in ('Suspicious','Likely Phishing') else 'pill-fail') }}">{{ c.verdict }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+          <p class="empty-note">No cases analyzed yet. <a href="{{ url_for('index') }}">Analyze an email</a> to populate the dashboard.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <footer class="note">
+      Stats are computed live from the local cases.db on every page load — this is a
+      single-instance prototype dashboard, not a multi-tenant analytics service.
+    </footer>
+  </div>
+</body>
+</html>

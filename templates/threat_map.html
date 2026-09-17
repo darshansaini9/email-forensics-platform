@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Threat Map — Email Forensic Intelligence Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <div class="wrap" style="max-width: 1280px;">
+    <header class="masthead">
+      <div class="title">Threat Map
+        <span>Sender geolocation and mail-routing hops across every analyzed case</span>
+      </div>
+      <div class="nav-links">
+        <a class="btn btn-secondary" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="btn btn-secondary" href="{{ url_for('list_cases') }}">Case history</a>
+        <a class="btn btn-secondary" href="{{ url_for('index') }}">&larr; Analyze another</a>
+      </div>
+    </header>
+
+    <div class="map-page-wrap">
+      <div id="threat-map-canvas"></div>
+      <div class="map-sidebar">
+        <h3>Overview</h3>
+        <div class="map-stat-row"><span>Total scans</span><span class="v" id="stat-total">-</span></div>
+        <div class="map-stat-row"><span>Geo-tagged</span><span class="v" id="stat-geo">-</span></div>
+        <div class="map-stat-row"><span>Countries</span><span class="v" id="stat-countries">-</span></div>
+
+        <h3>Legend</h3>
+        <div class="map-legend">
+          <span><i style="background:var(--risk-critical)"></i> High-Risk Fraud</span>
+          <span><i style="background:var(--risk-high)"></i> Likely Phishing</span>
+          <span><i style="background:var(--risk-mid)"></i> Suspicious</span>
+          <span><i style="background:var(--accent)"></i> Legitimate</span>
+        </div>
+
+        <h3>Layers</h3>
+        <div class="map-toggle-row">
+          <input type="checkbox" id="layer-origin" checked onchange="toggleLayer('origin')">
+          <label for="layer-origin">Threat origins</label>
+        </div>
+        <div class="map-toggle-row">
+          <input type="checkbox" id="layer-route" checked onchange="toggleLayer('route')">
+          <label for="layer-route">Mail routing hops (thread map)</label>
+        </div>
+        <div class="map-toggle-row">
+          <input type="checkbox" id="layer-heat" onchange="toggleLayer('heat')">
+          <label for="layer-heat">Heat density</label>
+        </div>
+
+        <h3>Time range</h3>
+        <div class="map-btn-row">
+          <button class="time-btn active" onclick="setTimeRange(1, this)">24h</button>
+          <button class="time-btn" onclick="setTimeRange(7, this)">7d</button>
+          <button class="time-btn" onclick="setTimeRange(30, this)">30d</button>
+          <button class="time-btn" onclick="setTimeRange(0, this)">All</button>
+        </div>
+
+        <h3>Risk filter</h3>
+        <div class="map-btn-row">
+          <button class="risk-btn active" onclick="setRiskFilter('', this)">All</button>
+          <button class="risk-btn" onclick="setRiskFilter('Critical', this)">Critical</button>
+          <button class="risk-btn" onclick="setRiskFilter('High', this)">High</button>
+          <button class="risk-btn" onclick="setRiskFilter('Medium', this)">Medium</button>
+        </div>
+
+        <h3>Top threat sources</h3>
+        <div id="country-list"><p class="empty-note">Loading…</p></div>
+
+        <h3>Recent activity</h3>
+        <div class="map-feed" id="live-feed"><p class="empty-note">Loading…</p></div>
+      </div>
+    </div>
+
+    <footer class="note" style="margin-top:20px;">
+      GeoIP indicates network location of the sending infrastructure, not necessarily the
+      physical location of the sender — see each case's own report for caveats. Locations
+      shown are the earliest public hop in the header chain for each analyzed email.
+    </footer>
+  </div>
+</body>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map('threat-map-canvas', { center: [20, 10], zoom: 2, zoomControl: true, attributionControl: false });
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16, attribution: '&copy; Esri'
+  }).addTo(map);
+
+  const originLayer = L.layerGroup().addTo(map);
+  const routeLayer = L.layerGroup().addTo(map);
+  const heatLayer = L.layerGroup();
+  let heatPoints = [];
+
+  let currentDays = 1;
+  let currentRisk = '';
+
+  const riskColors = {
+    Critical: '#e84f6b',
+    High: '#e8734f',
+    Medium: '#e8b04f',
+    Safe: '#4fd1a5',
+    Unknown: '#8fa39c',
+  };
+
+  function marker(p) {
+    const color = riskColors[p.risk_level] || riskColors.Unknown;
+    const size = p.risk_score > 70 ? 14 : p.risk_score > 40 ? 10 : 7;
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:${size}px;height:${size}px;background:${color};border:2px solid ${color}55;border-radius:50%;"></div>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+    const popup = `
+      <div class="map-popup-title">${p.from || 'Unknown sender'}</div>
+      <div class="map-popup-row"><b>Subject:</b> ${p.subject || 'N/A'}</div>
+      <div class="map-popup-row"><b>Location:</b> ${p.city || '?'}, ${p.country || '?'}</div>
+      <div class="map-popup-row"><b>Risk:</b> <span style="color:${color};font-weight:600">${p.risk_level} (${p.risk_score}/100)</span></div>
+      <div class="map-popup-row"><b>Time:</b> ${p.timestamp ? new Date(p.timestamp).toLocaleString() : 'N/A'}</div>
+      <div class="map-popup-row"><a href="/cases/${p.case_id}">Open case #${p.case_id} &rarr;</a></div>
+    `;
+    return L.marker([p.lat, p.lon], { icon }).bindPopup(popup, { maxWidth: 300 });
+  }
+
+  function routeLine(r) {
+    if (r.hops.length < 2) return null;
+    const coords = r.hops.map(h => [h.lat, h.lon]);
+    const suspicious = r.hops.some(h => h.suspicious);
+    return L.polyline(coords, {
+      color: suspicious ? '#e84f6b' : '#4fd1a5',
+      weight: suspicious ? 3 : 2,
+      opacity: 0.55,
+      dashArray: suspicious ? '7,4' : null,
+    }).bindPopup(`Mail route — case #${r.case_id}${suspicious ? ' (flagged)' : ''}`);
+  }
+
+  async function loadMap() {
+    const daysParam = currentDays || 3650; // "All" -> effectively unbounded
+    const [pointsRes, statsRes, recentRes] = await Promise.all([
+      fetch(`/api/threat-map/points?days=${daysParam}&risk_level=${currentRisk}`),
+      fetch(`/api/threat-map/stats?days=${daysParam}`),
+      fetch('/api/threat-map/recent?limit=12'),
+    ]);
+    const pointsData = await pointsRes.json();
+    const statsData = await statsRes.json();
+    const recentData = await recentRes.json();
+
+    originLayer.clearLayers();
+    routeLayer.clearLayers();
+    heatPoints = [];
+
+    (pointsData.points || []).forEach(p => {
+      if (p.type === 'origin') {
+        marker(p).addTo(originLayer);
+        heatPoints.push([p.lat, p.lon, Math.min(p.risk_score / 100, 1)]);
+      } else if (p.type === 'route') {
+        const line = routeLine(p);
+        if (line) line.addTo(routeLayer);
+      }
+    });
+
+    document.getElementById('stat-total').textContent = statsData.total_scans ?? 0;
+    document.getElementById('stat-geo').textContent = statsData.geo_tagged ?? 0;
+    document.getElementById('stat-countries').textContent = statsData.countries ?? 0;
+
+    const maxCount = (statsData.top_countries && statsData.top_countries[0]) ? statsData.top_countries[0].count : 1;
+    const countryList = document.getElementById('country-list');
+    countryList.innerHTML = (statsData.top_countries && statsData.top_countries.length)
+      ? statsData.top_countries.map(c => `
+          <div class="country-bar">
+            <span class="cb-name">${c.country}</span>
+            <div class="cb-track"><div class="cb-fill" style="width:${(c.count / maxCount) * 100}%;"></div></div>
+            <span class="cb-count">${c.count}</span>
+          </div>`).join('')
+      : '<p class="empty-note">No geo-tagged cases yet.</p>';
+
+    const feed = document.getElementById('live-feed');
+    feed.innerHTML = (recentData.recent && recentData.recent.length)
+      ? recentData.recent.map(r => `
+          <div class="map-feed-item risk-${r.risk_level}">
+            <div class="mf-from">${r.from || 'Unknown sender'}</div>
+            <div class="mf-sub">${r.subject || 'No subject'}</div>
+            <div class="mf-meta">${r.country || '?'} &middot; ${r.verdict} &middot; ${r.timestamp ? new Date(r.timestamp).toLocaleTimeString() : ''}</div>
+          </div>`).join('')
+      : '<p class="empty-note">No cases analyzed yet.</p>';
+  }
+
+  function toggleLayer(name) {
+    if (name === 'origin') { map.hasLayer(originLayer) ? map.removeLayer(originLayer) : map.addLayer(originLayer); }
+    else if (name === 'route') { map.hasLayer(routeLayer) ? map.removeLayer(routeLayer) : map.addLayer(routeLayer); }
+    else if (name === 'heat') {
+      if (map.hasLayer(heatLayer)) { map.removeLayer(heatLayer); }
+      else {
+        heatLayer.clearLayers();
+        heatPoints.forEach(([lat, lon, intensity]) => {
+          L.circle([lat, lon], {
+            radius: 60000 + intensity * 120000,
+            color: '#e8734f', fillColor: '#e8734f',
+            fillOpacity: 0.12 + intensity * 0.2, weight: 0,
+          }).addTo(heatLayer);
+        });
+        map.addLayer(heatLayer);
+      }
+    }
+  }
+
+  function setTimeRange(days, btn) {
+    currentDays = days;
+    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadMap();
+  }
+
+  function setRiskFilter(level, btn) {
+    currentRisk = level;
+    document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadMap();
+  }
+
+  loadMap();
+  setInterval(loadMap, 30000);
+</script>
+</html>

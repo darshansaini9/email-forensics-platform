@@ -1,0 +1,57 @@
+Delivered-To: finance@northbridge-corp.com
+Received: by 2002:a17:906:1234:b0:9a1:abc:def0 with SMTP id x10csp1234567wrx;
+        Mon, 8 Sep 2026 03:14:02 -0700 (PDT)
+Received: from mail-relay-internal.northbridge-corp.com (mail-relay-internal.northbridge-corp.com. [10.20.30.5])
+        by mx.google.com with ESMTPS id a1-20020a170906;
+        Mon, 08 Sep 2026 03:14:01 -0700 (PDT)
+Received: from smtp-out-203.hostingcloud-relay.net (smtp-out-203.hostingcloud-relay.net. [185.220.101.47])
+        by mail-relay-internal.northbridge-corp.com with ESMTP id b2c3d4e5f6;
+        Mon, 08 Sep 2026 10:13:55 +0000 (UTC)
+Received-SPF: fail (google.com: domain of ceo@northbridge-corp.com does not designate 185.220.101.47 as permitted sender) client-ip=185.220.101.47;
+Authentication-Results: mx.google.com;
+       spf=fail (google.com: domain of ceo@northbridge-corp.com does not designate 185.220.101.47 as permitted sender) smtp.mailfrom=ceo@northbridge-corp.com;
+       dkim=none (message not signed) header.d=none;
+       dmarc=fail (p=REJECT sp=REJECT dis=none) header.from=northbridge-corp.com
+Message-ID: <a1b2c3d4e5f6@hostingcloud-relay.net>
+Date: Mon, 08 Sep 2026 10:13:50 +0000
+From: "David Whitfield - CEO" <ceo@northbrldge-corp.com>
+Reply-To: david.whitfield.ceo@protonmail-secure.xyz
+To: finance@northbridge-corp.com
+Subject: URGENT - Confidential wire transfer required today
+Content-Type: multipart/alternative; boundary="000000000000abc123"
+
+--000000000000abc123
+Content-Type: text/plain; charset="UTF-8"
+
+Dear Finance Team,
+
+I need you to process an urgent wire transfer today before 2 PM. This is
+a confidential transaction related to a new vendor acquisition and must
+be treated as urgent - please do not discuss with anyone else in the
+office until it is finalized.
+
+Kindly treat this as urgent. New payment instructions and a change of
+bank details are attached. Please confirm once the wire transfer has
+been initiated so I can update the board.
+
+Failure to respond within the next hour may cause us to lose this deal.
+Please verify your identity by replying directly to this email with your
+authorization code.
+
+Regards,
+David Whitfield
+Chief Executive Officer
+
+--000000000000abc123
+Content-Type: text/html; charset="UTF-8"
+
+<html><body>
+<p>Dear Finance Team,</p>
+<p>I need you to process an <b>urgent wire transfer</b> today before 2 PM.
+This is a confidential transaction and must be treated as urgent.</p>
+<p>Please review the new payment instructions here:
+<a href="http://185.220.101.47/secure-invoice/payment.php?ref=8841">https://northbridge-corp.com/secure-invoice</a></p>
+<p>Regards,<br>David Whitfield<br>Chief Executive Officer</p>
+</body></html>
+
+--000000000000abc123--
